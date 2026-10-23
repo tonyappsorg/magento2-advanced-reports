@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Magento_Reports::report">
+                    <resource id="Tonyapps_AdvancedReports::reports" title="Advanced Reports" sortOrder="5">
+                        <resource id="Tonyapps_AdvancedReports::sales_overview" title="Sales Overview" sortOrder="10"/>
+                        <resource id="Tonyapps_AdvancedReports::sales_by_payment" title="Sales by Payment Method" sortOrder="20"/>
+                    </resource>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>

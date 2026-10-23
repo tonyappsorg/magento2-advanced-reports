@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Tonyapps_AdvancedReports::reports" title="Advanced Reports" translate="title"
+             module="Tonyapps_AdvancedReports" sortOrder="5" parent="Magento_Reports::report"
+             resource="Tonyapps_AdvancedReports::reports"/>
+        <add id="Tonyapps_AdvancedReports::sales_overview" title="Sales Overview" translate="title"
+             module="Tonyapps_AdvancedReports" sortOrder="10" parent="Tonyapps_AdvancedReports::reports"
+             action="tonyapps_reports/report/view/code/sales_overview"
+             resource="Tonyapps_AdvancedReports::sales_overview"/>
+        <add id="Tonyapps_AdvancedReports::sales_by_payment" title="Sales by Payment Method" translate="title"
+             module="Tonyapps_AdvancedReports" sortOrder="20" parent="Tonyapps_AdvancedReports::reports"
+             action="tonyapps_reports/report/view/code/sales_by_payment"
+             resource="Tonyapps_AdvancedReports::sales_by_payment"/>
+    </menu>
+</config>

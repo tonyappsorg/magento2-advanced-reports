@@ -1,0 +1,102 @@
+<?php
+/** @var \Tonyapps\AdvancedReports\Block\Adminhtml\Report $block */
+/** @var \Magento\Framework\Escaper $escaper */
+$result = $block->getResult();
+$params = $block->getFilterParams();
+$chart = $block->getChartConfig();
+?>
+<form method="get" action="<?= $escaper->escapeUrl($block->getFormUrl()) ?>" class="tonyapps-report-filter"
+      style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:flex-end;margin-bottom:2rem">
+    <label><?= $escaper->escapeHtml(__('From')) ?><br>
+        <input type="date" name="from" class="admin__control-text" required
+               value="<?= $escaper->escapeHtmlAttr($params['from']) ?>">
+    </label>
+    <label><?= $escaper->escapeHtml(__('To')) ?><br>
+        <input type="date" name="to" class="admin__control-text" required
+               value="<?= $escaper->escapeHtmlAttr($params['to']) ?>">
+    </label>
+    <?php if ($block->getReport()->isPeriodic()): ?>
+        <label><?= $escaper->escapeHtml(__('Show by')) ?><br>
+            <select name="period" class="admin__control-select">
+                <?php foreach (['day' => __('Day'), 'week' => __('Week'), 'month' => __('Month')] as $value => $label): ?>
+                    <option value="<?= $escaper->escapeHtmlAttr($value) ?>"
+                        <?= $params['period'] === $value ? 'selected' : '' ?>><?= $escaper->escapeHtml($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+    <?php endif; ?>
+    <label><?= $escaper->escapeHtml(__('Store Views')) ?> <small>(<?= $escaper->escapeHtml(__('none = all')) ?>)</small><br>
+        <select name="store_ids[]" multiple size="4" class="admin__control-multiselect">
+            <?php foreach ($block->getStoreOptions() as $id => $label): ?>
+                <option value="<?= (int)$id ?>"
+                    <?= in_array($id, $params['store_ids'], true) ? 'selected' : '' ?>><?= $escaper->escapeHtml($label) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+    <label><?= $escaper->escapeHtml(__('Order States')) ?><br>
+        <select name="states[]" multiple size="4" class="admin__control-multiselect">
+            <?php foreach ($block->getStateOptions() as $state => $label): ?>
+                <option value="<?= $escaper->escapeHtmlAttr($state) ?>"
+                    <?= in_array($state, $params['states'], true) ? 'selected' : '' ?>><?= $escaper->escapeHtml($label) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+    <div>
+        <button type="submit" class="action-primary"><span><?= $escaper->escapeHtml(__('Show Report')) ?></span></button>
+        <a class="action-secondary" href="<?= $escaper->escapeUrl($block->getExportUrl()) ?>"
+           style="margin-left:.5rem"><?= $escaper->escapeHtml(__('Export CSV')) ?></a>
+    </div>
+</form>
+
+<?php if ($chart !== null && $result->rows): ?>
+    <div style="position:relative;height:320px;margin-bottom:2rem">
+        <canvas data-mage-init='<?= $escaper->escapeHtmlAttr(
+            '{"Tonyapps_AdvancedReports/js/chart":' . $chart . '}'
+        ) ?>'></canvas>
+    </div>
+<?php endif; ?>
+
+<div class="admin__data-grid-wrap">
+    <table class="data-grid">
+        <thead>
+        <tr>
+            <?php foreach ($result->columns as $column): ?>
+                <th class="data-grid-th"><?= $escaper->escapeHtml($column['label']) ?></th>
+            <?php endforeach; ?>
+        </tr>
+        </thead>
+        <tbody>
+        <?php if (!$result->rows): ?>
+            <tr><td colspan="<?= count($result->columns) ?>" class="empty-text">
+                <?= $escaper->escapeHtml(__('No orders match this filter.')) ?>
+            </td></tr>
+        <?php endif; ?>
+        <?php foreach ($result->rows as $row): ?>
+            <tr>
+                <?php foreach ($result->columns as $key => $column): ?>
+                    <td<?= $column['type'] === 'text' ? '' : ' style="text-align:right"' ?>>
+                        <?= $escaper->escapeHtml($block->format($column['type'], $row[$key] ?? null)) ?>
+                    </td>
+                <?php endforeach; ?>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+        <?php if ($result->totals): ?>
+            <tfoot>
+            <tr style="font-weight:600">
+                <?php foreach ($result->columns as $key => $column): ?>
+                    <td<?= $column['type'] === 'text' ? '' : ' style="text-align:right"' ?>>
+                        <?= $escaper->escapeHtml($block->format($column['type'], $result->totals[$key] ?? null)) ?>
+                        <?php if (isset($result->deltas[$key])): $d = $result->deltas[$key]; ?>
+                            <br><small style="color:<?= $d >= 0 ? '#185b00' : '#e22626' ?>"
+                                       title="<?= $escaper->escapeHtmlAttr(__('vs previous period')) ?>">
+                                <?= $escaper->escapeHtml(($d >= 0 ? '▲ ' : '▼ ') . abs($d) . '%') ?>
+                            </small>
+                        <?php endif; ?>
+                    </td>
+                <?php endforeach; ?>
+            </tr>
+            </tfoot>
+        <?php endif; ?>
+    </table>
+</div>

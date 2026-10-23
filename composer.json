@@ -1,0 +1,22 @@
+{
+    "name": "tonyapps/module-advanced-reports",
+    "description": "Live admin sales reports with charts, CSV export, scheduled email and REST for Magento 2.4",
+    "type": "magento2-module",
+    "version": "0.1.0",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.3",
+        "magento/framework": "*",
+        "magento/module-backend": "*",
+        "magento/module-directory": "*",
+        "magento/module-reports": "*",
+        "magento/module-sales": "*",
+        "magento/module-store": "*"
+    },
+    "autoload": {
+        "files": ["registration.php"],
+        "psr-4": {
+            "Tonyapps\\AdvancedReports\\": ""
+        }
+    }
+}
