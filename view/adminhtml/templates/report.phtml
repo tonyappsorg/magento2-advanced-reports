@@ -71,7 +71,7 @@ $chart = $block->getChartConfig();
                 <?= $escaper->escapeHtml(__('No orders match this filter.')) ?>
             </td></tr>
         <?php endif; ?>
-        <?php foreach ($result->rows as $row): ?>
+        <?php foreach (array_slice($result->rows, 0, $block::MAX_HTML_ROWS) as $row): ?>
             <tr>
                 <?php foreach ($result->columns as $key => $column): ?>
                     <td<?= $column['type'] === 'text' ? '' : ' style="text-align:right"' ?>>
@@ -99,4 +99,11 @@ $chart = $block->getChartConfig();
             </tfoot>
         <?php endif; ?>
     </table>
+    <?php if (count($result->rows) > $block::MAX_HTML_ROWS): ?>
+        <p class="message message-notice"><?= $escaper->escapeHtml(__(
+            'Showing the first %1 of %2 rows. Export CSV has all of them.',
+            $block::MAX_HTML_ROWS,
+            count($result->rows)
+        )) ?></p>
+    <?php endif; ?>
 </div>

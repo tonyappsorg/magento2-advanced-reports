@@ -32,6 +32,9 @@ admins, and a REST endpoint for external BI.
 3. **Margin appears only when there is cost data.** `sales_order_item.base_cost` is used when it
    is > 0. Otherwise the margin columns are hidden. There's no extra config.
 4. **Audience: admin grid + chart + CSV export, scheduled email, and a REST API.**
+5. **Order export lives here (added 2026-10-25), not in its own module.** Two row-level reports
+   (orders, order items) plus a scheduled email that sends new orders since the last run as CSV
+   attachments. CSV only. See *Order export*.
 
 ## Design
 
@@ -102,6 +105,54 @@ zero-results filter. **Exception to "no new tables":**
 - `GET /V1/tonyapps/reports/:code?from=&to=&store_ids[]=&state[]=` returns `{columns, rows, totals}`.
 - Auth: admin token or integration. ACL is the per-report resource, so an integration only
   gets the reports it's granted.
+
+## Order export
+
+Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email delivery, "new since last run", CSV only.
+
+| # | Code | One row per | Columns |
+|---|---|---|---|
+| 9a | `order_export` | order | order #, created (store time), store, state, status, customer email/name/group, guest flag, billing name/company/street/city/region/postcode/country/phone/VAT, shipping name/street/city/region/postcode/country, shipping method, payment method code, coupon, items qty, base currency, base subtotal/discount/shipping/tax/grand total/refunded, order currency, grand total charged |
+| 9b | `order_items_export` | priced order item | order #, created, status, customer email, item ID, SKU, name, type, qty ordered/invoiced/shipped/refunded/canceled, base price, base row total, discount, tax, row total incl. tax |
+
+- Both are ordinary `ReportInterface` reports. They use the same filters, the Export CSV button,
+  ACL, and (in phase 4) REST as every other report. No totals row, because ERP imports choke on one.
+- Money is in **base** currency per order (`base_*`, with the currency code column), not
+  converted to global like the aggregate reports. These are row data for accounting, not sums.
+- Items: only rows with `parent_item_id IS NULL`. A configurable's parent row already carries the
+  chosen simple's SKU and the price. `ponytail:` dynamic-price bundle children aren't exported
+  separately. Add them if an ERP needs bundle components.
+- The admin page shows the first 500 rows. The CSV always has every row.
+
+### Scheduled order export
+
+- Config: `Stores > Configuration > Tonyapps > Advanced Reports > Order Export`. Settings: enabled,
+  schedule (cron expression, default `0 6 * * *`), recipients (comma-separated emails), and files
+  (orders, items, or both).
+- **New since last run:** the last exported `sales_order.entity_id` is kept in core's `flag` table.
+  Each run exports `last < entity_id <= max at start` and only advances the mark after the email
+  is sent. That way an order lands in exactly one email, even if a run fails or is skipped.
+  First run: orders from the last 24 hours, so switching it on doesn't mail the whole history.
+- **Every state is included.** A state filter would lose orders for good: a `pending_payment` order
+  skipped today has a lower ID than the mark by the time it's paid. The state column tells the ERP.
+  `ponytail:` no re-send on later status changes. That's a "changed since" feed, if ever needed.
+- No new orders means no email.
+- Attachments: Magento's mail wrapper keeps only the first text part, so the CSVs are added
+  to the underlying Symfony message (`MixedPart` + `DataPart`, from core's `symfony/mime`).
+
+### Order export, as built (2026-10-25)
+
+- `Report/OrderExport` and `Report/OrderItemsExport` both have a `fromSelect(Select)`, so the reports
+  (`OrderSelect::create`) and the scheduled run (`OrderSelect::createIdRange`) share the same row code.
+  `ScheduledOrderExport` holds the mark logic, `AttachmentMailer` the Symfony attachment step, and the cron
+  schedule comes from config via `<config_path>`.
+- The email renders in the **frontend** area of the default store view. In the adminhtml area the shared
+  `design/email/header_template` fails ("Template file 'header.html' is not found").
+- Checked: 7 unit tests for the mark (disabled, no recipients, nothing new, sends then advances, failed
+  send keeps the mark, first run = last 24h, orders-only file). Both reports against the dev DB: 27 orders /
+  $1,208.03 and 29 item rows / 30 units, both matching raw SQL. Store-time conversion (18:27 UTC → 11:27 PDT).
+  Real send to Mailpit: subject, body, two `text/csv` attachments, mark 36 → 39, second run sent nothing.
+- **Not checked:** the config page and the two report pages in a real browser (same 2FA blocker as phase 1).
 
 ## Phases
 

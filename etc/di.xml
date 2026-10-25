@@ -6,6 +6,8 @@
             <argument name="reports" xsi:type="array">
                 <item name="sales_overview" xsi:type="object">Tonyapps\AdvancedReports\Model\Report\SalesOverview</item>
                 <item name="sales_by_payment" xsi:type="object">Tonyapps\AdvancedReports\Model\Report\SalesByPayment</item>
+                <item name="order_export" xsi:type="object">Tonyapps\AdvancedReports\Model\Report\OrderExport</item>
+                <item name="order_items_export" xsi:type="object">Tonyapps\AdvancedReports\Model\Report\OrderItemsExport</item>
             </argument>
         </arguments>
     </type>

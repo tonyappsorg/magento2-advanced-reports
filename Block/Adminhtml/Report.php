@@ -18,6 +18,9 @@ use Tonyapps\AdvancedReports\Model\Result;
  */
 class Report extends Template
 {
+    /** Row-level reports (order export) can be long; the CSV always has every row. */
+    public const MAX_HTML_ROWS = 500;
+
     private ?Result $result = null;
 
     public function __construct(

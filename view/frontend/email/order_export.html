@@ -1,0 +1,11 @@
+<!--@subject {{trans "Order export: %count new orders" count=$count}} @-->
+<!--@vars {
+"var count":"Order Count",
+"var first":"First Order #",
+"var last":"Last Order #"
+} @-->
+{{template config_path="design/email/header_template"}}
+
+<p>{{trans "%count orders placed since the last export are attached (#%first to #%last)." count=$count first=$first last=$last}}</p>
+
+{{template config_path="design/email/footer_template"}}

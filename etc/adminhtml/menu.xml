@@ -13,5 +13,13 @@
              module="Tonyapps_AdvancedReports" sortOrder="20" parent="Tonyapps_AdvancedReports::reports"
              action="tonyapps_reports/report/view/code/sales_by_payment"
              resource="Tonyapps_AdvancedReports::sales_by_payment"/>
+        <add id="Tonyapps_AdvancedReports::order_export" title="Order Export" translate="title"
+             module="Tonyapps_AdvancedReports" sortOrder="900" parent="Tonyapps_AdvancedReports::reports"
+             action="tonyapps_reports/report/view/code/order_export"
+             resource="Tonyapps_AdvancedReports::order_export"/>
+        <add id="Tonyapps_AdvancedReports::order_items_export" title="Order Items Export" translate="title"
+             module="Tonyapps_AdvancedReports" sortOrder="910" parent="Tonyapps_AdvancedReports::reports"
+             action="tonyapps_reports/report/view/code/order_items_export"
+             resource="Tonyapps_AdvancedReports::order_items_export"/>
     </menu>
 </config>

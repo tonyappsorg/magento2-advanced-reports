@@ -8,6 +8,15 @@
                     <resource id="Tonyapps_AdvancedReports::reports" title="Advanced Reports" sortOrder="5">
                         <resource id="Tonyapps_AdvancedReports::sales_overview" title="Sales Overview" sortOrder="10"/>
                         <resource id="Tonyapps_AdvancedReports::sales_by_payment" title="Sales by Payment Method" sortOrder="20"/>
+                        <resource id="Tonyapps_AdvancedReports::order_export" title="Order Export" sortOrder="900"/>
+                        <resource id="Tonyapps_AdvancedReports::order_items_export" title="Order Items Export" sortOrder="910"/>
+                    </resource>
+                </resource>
+                <resource id="Magento_Backend::stores">
+                    <resource id="Magento_Backend::stores_settings">
+                        <resource id="Magento_Config::config">
+                            <resource id="Tonyapps_AdvancedReports::order_export_config" title="Advanced Reports: Order Export" sortOrder="90"/>
+                        </resource>
                     </resource>
                 </resource>
             </resource>

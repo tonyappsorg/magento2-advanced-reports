@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <!-- Same tab as B2b/OneStepCheckout; identical declarations merge, so no dependency on them. -->
+        <tab id="tonyapps" translate="label" sortOrder="400">
+            <label>Tonyapps</label>
+        </tab>
+        <section id="tonyapps_advancedreports" translate="label" type="text" sortOrder="30" showInDefault="1">
+            <label>Advanced Reports</label>
+            <tab>tonyapps</tab>
+            <resource>Tonyapps_AdvancedReports::order_export_config</resource>
+            <group id="order_export" translate="label comment" type="text" sortOrder="10" showInDefault="1">
+                <label>Order Export</label>
+                <comment><![CDATA[Emails orders placed since the last run as CSV. Every order is sent exactly once, in every state. The first run covers the last 24 hours. Without new orders, no email is sent.]]></comment>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1">
+                    <label>Enable Scheduled Export</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="schedule" translate="label comment" type="text" sortOrder="20" showInDefault="1">
+                    <label>Schedule (cron expression)</label>
+                    <comment><![CDATA[Server time. <code>0 6 * * *</code> = daily at 06:00, <code>0 * * * *</code> = hourly.]]></comment>
+                    <validate>required-entry</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="recipients" translate="label comment" type="text" sortOrder="30" showInDefault="1">
+                    <label>Recipients</label>
+                    <comment>Comma-separated email addresses.</comment>
+                    <validate>required-entry</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="files" translate="label" type="multiselect" sortOrder="40" showInDefault="1">
+                    <label>Attach</label>
+                    <source_model>Tonyapps\AdvancedReports\Model\Config\Source\ExportFiles</source_model>
+                    <can_be_empty>1</can_be_empty>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>
