@@ -9,11 +9,9 @@ class ReportPool
 {
     /**
      * @param array<string, ReportInterface> $reports keyed by report code
-     * @param array<string, string> $aclResources optional per-code override of the ACL resource
      */
     public function __construct(
-        private readonly array $reports = [],
-        private readonly array $aclResources = []
+        private readonly array $reports = []
     ) {
     }
 
@@ -34,16 +32,8 @@ class ReportPool
         return $this->reports[$code];
     }
 
-    /**
-     * @return array<string, ReportInterface>
-     */
-    public function getAll(): array
-    {
-        return $this->reports;
-    }
-
     public function getAclResource(string $code): string
     {
-        return $this->aclResources[$code] ?? 'Tonyapps_AdvancedReports::' . $code;
+        return 'Tonyapps_AdvancedReports::' . $code;
     }
 }

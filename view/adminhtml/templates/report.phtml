@@ -101,9 +101,8 @@ $chart = $block->getChartConfig();
     </table>
     <?php if (count($result->rows) > $block::MAX_HTML_ROWS): ?>
         <p class="message message-notice"><?= $escaper->escapeHtml(__(
-            'Showing the first %1 of %2 rows. Export CSV has all of them.',
-            $block::MAX_HTML_ROWS,
-            count($result->rows)
+            'Showing the first %1 rows. Export CSV has all of them.',
+            $block::MAX_HTML_ROWS
         )) ?></p>
     <?php endif; ?>
 </div>

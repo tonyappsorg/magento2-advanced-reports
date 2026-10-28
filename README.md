@@ -122,7 +122,9 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
 - Items: only rows with `parent_item_id IS NULL`. A configurable's parent row already carries the
   chosen simple's SKU and the price. `ponytail:` dynamic-price bundle children aren't exported
   separately. Add them if an ERP needs bundle components.
-- The admin page shows the first 500 rows. The CSV always has every row.
+- The admin page fetches only the first 500 rows (501, to know whether to say so), so a long range can't run
+  PHP out of memory there. The CSV always has every row. `ponytail:` the CSV export still builds the whole file in
+  memory; stream it if exports reach hundreds of thousands of rows.
 
 ### Scheduled order export
 
@@ -130,8 +132,13 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
   schedule (cron expression, default `0 6 * * *`), recipients (comma-separated emails), and files
   (orders, items, or both).
 - **New since last run:** the last exported `sales_order.entity_id` is kept in core's `flag` table.
-  Each run exports `last < entity_id <= max at start` and only advances the mark after the email
-  is sent. That way an order lands in exactly one email, even if a run fails or is skipped.
+  Each run exports `last < entity_id <= max` and only advances the mark after the email is sent. That way an
+  order lands in exactly one email, even if a run fails or is skipped.
+- **Settle window:** "max" is the highest ID among orders created more than 10 minutes ago. Order IDs are
+  assigned at insert but only visible at commit, not in ID order; without the window a run could see order 102
+  while 101's checkout was still committing, move the mark past 101 and never send it.
+- **Email disabled** (`Advanced > System > Mail Sending Settings > Disable Email Communications`): the run logs a
+  warning and stops without moving the mark, instead of core silently dropping the email.
   First run: orders from the last 24 hours, so switching it on doesn't mail the whole history.
 - **Every state is included.** A state filter would lose orders for good: a `pending_payment` order
   skipped today has a lower ID than the mark by the time it's paid. The state column tells the ERP.
@@ -165,7 +172,7 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
 ## Phase 1, as built
 
 - `Model/ReportInterface` (`getTitle`, `isPeriodic`, `run(Filter): Result`), `ReportPool` (di.xml; ACL =
-  `Tonyapps_AdvancedReports::<code>` unless overridden via the pool's `aclResources` argument).
+  `Tonyapps_AdvancedReports::<code>`).
 - `Model/Filter` is a value object: local-day range, UTC conversion, previous period, and period buckets.
   `FilterFactory` validates untrusted params: `Y-m-d` dates, max 1100 days, whitelisted period/states,
   int store ids. Default is the last 30 days with every state except `canceled`.
@@ -174,7 +181,8 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
   into local day/week/month in PHP, so there's no `CONVERT_TZ` and no MySQL tz tables needed.
 - Margin: cost from leaf items (as core's invoice cost total does), revenue from the priced item
   (configurable parent or itself). Hidden when no item in range has `base_cost > 0`.
-- Admin: `tonyapps_reports/report/view/code/<code>` and `/export/code/<code>` (CSV with formula-injection guard).
+- Admin: `tonyapps_reports/report/view/code/<code>` and `/export/code/<code>` (CSV with formula-injection guard: text starting with `=`, `@`, `+`, `-`, tab or CR gets a leading `'`; numbers
+  and phone-like values such as `+1 555 0100` or `-5` are left alone for ERP imports).
   One block + `report.phtml`. The chart is `view/adminhtml/web/js/chart.js` on core's `chartJs`.
 - Checked: unit tests (`Test/Unit/Model/FilterTest.php`, DST/bucket/previous-period), both reports
   against the dev DB (21 non-canceled orders, $1,022.03, which matches raw SQL), margin with a

@@ -45,7 +45,16 @@ class Report extends Template
 
     public function getResult(): Result
     {
-        return $this->result ??= $this->getReport()->run($this->getFilter());
+        // One row past the page size, so the template knows to say "showing the first N" without counting all.
+        $filter = $this->getFilter();
+        return $this->result ??= $this->getReport()->run(new Filter(
+            $filter->from,
+            $filter->to,
+            $filter->period,
+            $filter->storeIds,
+            $filter->states,
+            self::MAX_HTML_ROWS + 1
+        ));
     }
 
     public function getFormUrl(): string

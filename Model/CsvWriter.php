@@ -26,11 +26,18 @@ class CsvWriter
         return $csv;
     }
 
-    /** Stops spreadsheet apps from evaluating text such as "=HYPERLINK(...)" as a formula. */
+    /**
+     * Stops spreadsheet apps from evaluating text such as "=HYPERLINK(...)" as a formula. Numbers and
+     * phone-like values ("+1 555 0100", "-5", "+48 (22) 123-45-67") pass through untouched so ERP imports
+     * get the real value; a leading + or - followed by anything else is still guarded.
+     */
     private function cell(mixed $value): string
     {
         $value = (string)$value;
+        if (is_numeric($value) || preg_match('/^[+\-][\d\s().\/-]*$/', $value)) {
+            return $value;
+        }
 
-        return !is_numeric($value) && preg_match('/^[=+\-@\t\r]/', $value) ? "'" . $value : $value;
+        return preg_match('/^[=+\-@\t\r]/', $value) ? "'" . $value : $value;
     }
 }

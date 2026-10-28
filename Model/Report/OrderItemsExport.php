@@ -37,7 +37,12 @@ class OrderItemsExport implements ReportInterface
 
     public function run(Filter $filter): Result
     {
-        return $this->fromSelect($this->orderSelect->create($filter));
+        $select = $this->orderSelect->create($filter);
+        if ($filter->limit !== null) {
+            $select->limit($filter->limit);
+        }
+
+        return $this->fromSelect($select);
     }
 
     /** @param Select $orders a sales_order select aliased "o" with no columns (OrderSelect::create / createIdRange) */

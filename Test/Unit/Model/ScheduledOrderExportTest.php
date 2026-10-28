@@ -113,8 +113,9 @@ class ScheduledOrderExportTest extends TestCase
     public function testFirstRunStartsFromLast24Hours(): void
     {
         $this->flags->method('getFlagData')->willReturn(null);
+        // 24h-ago cutoff (first-run start) vs the settle cutoff a few minutes ago (end of the window).
         $this->orderSelect->method('getMaxOrderId')->willReturnCallback(
-            fn (?string $before = null) => $before === null ? 42 : 39
+            fn (?string $before = null) => strtotime($before . ' UTC') < time() - 3600 ? 39 : 42
         );
         $this->orderSelect->expects($this->atLeastOnce())->method('createIdRange')->with(39, 42);
         $this->flags->expects($this->once())->method('saveFlag')->with(ScheduledOrderExport::FLAG, 42);
@@ -133,5 +134,29 @@ class ScheduledOrderExportTest extends TestCase
         );
 
         $this->export->execute();
+    }
+
+    public function testOnlyExportsOrdersOlderThanTheSettleWindow(): void
+    {
+        $this->flags->method('getFlagData')->willReturn(40);
+        $this->orderSelect->expects($this->once())->method('getMaxOrderId')
+            ->with($this->callback(function (?string $before) {
+                $age = time() - strtotime($before . ' UTC');
+                return $age >= 9 * 60 && $age <= 11 * 60;
+            }))
+            ->willReturn(42);
+
+        $this->export->execute();
+    }
+
+    public function testEmailDisabledKeepsMarkSoOrdersAreNotLost(): void
+    {
+        $this->config['system/smtp/disable'] = '1';
+        $this->flags->method('getFlagData')->willReturn(40);
+        $this->orderSelect->method('getMaxOrderId')->willReturn(42);
+        $this->mailer->expects($this->never())->method('send');
+        $this->flags->expects($this->never())->method('saveFlag');
+
+        $this->assertSame(0, $this->export->execute());
     }
 }

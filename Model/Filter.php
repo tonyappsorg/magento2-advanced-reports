@@ -24,7 +24,9 @@ class Filter
         public readonly \DateTimeImmutable $to,
         public readonly string $period = self::PERIOD_DAY,
         public readonly array $storeIds = [],
-        public readonly array $states = []
+        public readonly array $states = [],
+        // Row-level reports stop after this many rows (the admin page); null = all (CSV export).
+        public readonly ?int $limit = null
     ) {
     }
 

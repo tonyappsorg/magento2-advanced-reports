@@ -12,8 +12,12 @@ use Tonyapps\AdvancedReports\Model\Report\OrderItemsExport;
 
 /**
  * Emails orders placed since the last run as CSV. The mark (last exported order ID) only moves after
- * the email is sent, and each run is capped at the max ID seen at start, so every order lands in
- * exactly one email even when a run fails or cron skips.
+ * the email is sent, and each run is capped at the max ID among orders older than SETTLE_MINUTES, so
+ * every order lands in exactly one email even when a run fails or cron skips.
+ *
+ * Why the settle window: order IDs are assigned at insert but become visible at commit, which isn't in
+ * ID order. Without it, a run could see order 102 while 101's checkout is still committing, move the
+ * mark past 101, and never send it.
  */
 class ScheduledOrderExport
 {
@@ -26,6 +30,8 @@ class ScheduledOrderExport
     private const XML_PATH_FILES = 'tonyapps_advancedreports/order_export/files';
     private const TEMPLATE = 'tonyapps_advancedreports_order_export';
     private const FIRST_RUN_HOURS = 24;
+    private const SETTLE_MINUTES = 10;
+    private const XML_PATH_EMAIL_DISABLED = 'system/smtp/disable';
 
     public function __construct(
         private readonly ScopeConfigInterface $scopeConfig,
@@ -45,6 +51,11 @@ class ScheduledOrderExport
         if (!$this->scopeConfig->isSetFlag(self::XML_PATH_ENABLED)) {
             return 0;
         }
+        if ($this->scopeConfig->isSetFlag(self::XML_PATH_EMAIL_DISABLED)) {
+            // Core would silently skip the send and the mark would move on, losing these orders for good.
+            $this->logger->warning('Advanced Reports order export skipped: email communications are disabled.');
+            return 0;
+        }
         $recipients = $this->getRecipients();
         if (!$recipients) {
             $this->logger->warning('Advanced Reports order export is enabled but has no valid recipients.');
@@ -58,7 +69,9 @@ class ScheduledOrderExport
             );
         }
         $lastId = (int)$lastId;
-        $upToId = $this->orderSelect->getMaxOrderId();
+        $upToId = $this->orderSelect->getMaxOrderId(
+            gmdate(DateTime::DATETIME_PHP_FORMAT, time() - self::SETTLE_MINUTES * 60)
+        );
         if ($upToId <= $lastId) {
             return 0;
         }
