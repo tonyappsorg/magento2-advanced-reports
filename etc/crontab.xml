@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
     <group id="default">
-        <job name="tonyapps_advancedreports_order_export" instance="Tonyapps\AdvancedReports\Cron\ExportOrders" method="execute">
+        <job name="tonyapps_advancedreports_order_export" instance="Tonyapps\AdvancedReports\Model\ScheduledOrderExport" method="execute">
             <config_path>tonyapps_advancedreports/order_export/schedule</config_path>
         </job>
     </group>
