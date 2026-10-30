@@ -25,15 +25,51 @@ abstract class AbstractOrderExport implements ReportInterface
 
     public function run(Filter $filter): Result
     {
+        return $this->fromSelect($this->filtered($filter));
+    }
+
+    /** @param Select $orders a sales_order select aliased "o" with no columns (OrderSelect::create / createIdRange) */
+    public function fromSelect(Select $orders): Result
+    {
+        return new Result($this->getColumns(), iterator_to_array($this->iterate($orders), false));
+    }
+
+    /**
+     * Rows one at a time, for the admin CSV export: a range of up to 1100 days doesn't fit in memory as one array.
+     *
+     * @return \Generator<array<string, mixed>>
+     */
+    public function stream(Filter $filter): \Generator
+    {
+        return $this->iterate($this->filtered($filter));
+    }
+
+    /** @return array<string, array{label: string, type: string}> */
+    abstract public function getColumns(): array;
+
+    /** Adds this export's joins, columns and order to the bare sales_order select. */
+    abstract protected function select(Select $orders): Select;
+
+    /** @param array<string, mixed> $row */
+    abstract protected function row(array $row): array;
+
+    private function filtered(Filter $filter): Select
+    {
         $select = $this->orderSelect->create($filter);
         if ($filter->limit !== null) {
             $select->limit($filter->limit);
         }
 
-        return $this->fromSelect($select);
+        return $select;
     }
 
-    abstract public function fromSelect(Select $orders): Result;
+    private function iterate(Select $orders): \Generator
+    {
+        $statement = $this->orderSelect->getConnection()->query($this->select($orders));
+        while ($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
+            yield $this->row($row);
+        }
+    }
 
     protected function storeTime(string $utcDate): string
     {

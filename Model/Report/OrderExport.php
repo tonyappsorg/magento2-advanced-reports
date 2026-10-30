@@ -21,65 +21,12 @@ class OrderExport extends AbstractOrderExport
         return (string)__('Order Export');
     }
 
-    /** @param Select $orders a sales_order select aliased "o" with no columns (OrderSelect::create / createIdRange) */
-    public function fromSelect(Select $orders): Result
+    public function getColumns(): array
     {
-        $address = $this->orderSelect->getTable('sales_order_address');
-        $select = $orders
-            ->joinLeft(['b' => $address], "b.parent_id = o.entity_id AND b.address_type = 'billing'", [
-                'billing_firstname' => 'b.firstname', 'billing_lastname' => 'b.lastname',
-                'billing_company' => 'b.company', 'billing_street' => 'b.street', 'billing_city' => 'b.city',
-                'billing_region' => 'b.region', 'billing_postcode' => 'b.postcode',
-                'billing_country' => 'b.country_id', 'billing_phone' => 'b.telephone', 'billing_vat' => 'b.vat_id',
-            ])
-            ->joinLeft(['s' => $address], "s.parent_id = o.entity_id AND s.address_type = 'shipping'", [
-                'shipping_firstname' => 's.firstname', 'shipping_lastname' => 's.lastname',
-                'shipping_street' => 's.street', 'shipping_city' => 's.city', 'shipping_region' => 's.region',
-                'shipping_postcode' => 's.postcode', 'shipping_country' => 's.country_id',
-            ])
-            ->joinLeft(['p' => $this->orderSelect->getTable('sales_order_payment')], 'p.parent_id = o.entity_id', [
-                'payment_method' => 'p.method',
-            ])
-            ->joinLeft(['st' => $this->orderSelect->getTable('store')], 'st.store_id = o.store_id', [
-                'store' => 'st.code',
-            ])
-            ->joinLeft(['g' => $this->orderSelect->getTable('customer_group')], 'g.customer_group_id = o.customer_group_id', [
-                'customer_group' => 'g.customer_group_code',
-            ])
-            ->columns([
-                'increment_id' => 'o.increment_id', 'created_at' => 'o.created_at', 'state' => 'o.state',
-                'status' => 'o.status', 'customer_email' => 'o.customer_email',
-                'customer_firstname' => 'o.customer_firstname', 'customer_lastname' => 'o.customer_lastname',
-                'customer_is_guest' => 'o.customer_is_guest', 'shipping_method' => 'o.shipping_description',
-                'coupon_code' => 'o.coupon_code', 'total_qty_ordered' => 'o.total_qty_ordered',
-                'base_currency_code' => 'o.base_currency_code', 'base_subtotal' => 'o.base_subtotal',
-                'base_discount_amount' => 'o.base_discount_amount', 'base_shipping_amount' => 'o.base_shipping_amount',
-                'base_tax_amount' => 'o.base_tax_amount', 'base_grand_total' => 'o.base_grand_total',
-                'base_total_refunded' => 'o.base_total_refunded', 'order_currency_code' => 'o.order_currency_code',
-                'grand_total' => 'o.grand_total',
-            ])
-            ->order('o.entity_id ASC');
-
-        $rows = [];
-        foreach ($this->orderSelect->getConnection()->fetchAll($select) as $row) {
-            $row['created_at'] = $this->storeTime((string)$row['created_at']);
-            $row['customer_name'] = trim($row['customer_firstname'] . ' ' . $row['customer_lastname']);
-            $row['customer_is_guest'] = $row['customer_is_guest'] ? 1 : 0;
-            $row['total_qty_ordered'] = (float)$row['total_qty_ordered'];
-            $row['billing_name'] = trim($row['billing_firstname'] . ' ' . $row['billing_lastname']);
-            $row['shipping_name'] = trim($row['shipping_firstname'] . ' ' . $row['shipping_lastname']);
-            $row['billing_street'] = self::street($row['billing_street']);
-            $row['shipping_street'] = self::street($row['shipping_street']);
-            foreach (self::MONEY as $key) {
-                $row[$key] = round((float)$row[$key], 2);
-            }
-            $rows[] = $row;
-        }
-
         $text = Result::TYPE_TEXT;
         $money = Result::TYPE_CURRENCY;
 
-        return new Result(self::columns([
+        return self::columns([
             'increment_id' => [__('Order #'), $text],
             'created_at' => [__('Created At (store time)'), $text],
             'store' => [__('Store'), $text],
@@ -117,7 +64,65 @@ class OrderExport extends AbstractOrderExport
             'base_total_refunded' => [__('Refunded'), $money],
             'order_currency_code' => [__('Order Currency'), $text],
             'grand_total' => [__('Grand Total Charged'), Result::TYPE_DECIMAL],
-        ]), $rows);
+        ]);
+    }
+
+
+    protected function select(Select $orders): Select
+    {
+        $address = $this->orderSelect->getTable('sales_order_address');
+
+        return $orders
+            ->joinLeft(['b' => $address], "b.parent_id = o.entity_id AND b.address_type = 'billing'", [
+                'billing_firstname' => 'b.firstname', 'billing_lastname' => 'b.lastname',
+                'billing_company' => 'b.company', 'billing_street' => 'b.street', 'billing_city' => 'b.city',
+                'billing_region' => 'b.region', 'billing_postcode' => 'b.postcode',
+                'billing_country' => 'b.country_id', 'billing_phone' => 'b.telephone', 'billing_vat' => 'b.vat_id',
+            ])
+            ->joinLeft(['s' => $address], "s.parent_id = o.entity_id AND s.address_type = 'shipping'", [
+                'shipping_firstname' => 's.firstname', 'shipping_lastname' => 's.lastname',
+                'shipping_street' => 's.street', 'shipping_city' => 's.city', 'shipping_region' => 's.region',
+                'shipping_postcode' => 's.postcode', 'shipping_country' => 's.country_id',
+            ])
+            ->joinLeft(['p' => $this->orderSelect->getTable('sales_order_payment')], 'p.parent_id = o.entity_id', [
+                'payment_method' => 'p.method',
+            ])
+            ->joinLeft(['st' => $this->orderSelect->getTable('store')], 'st.store_id = o.store_id', [
+                'store' => 'st.code',
+            ])
+            ->joinLeft(['g' => $this->orderSelect->getTable('customer_group')], 'g.customer_group_id = o.customer_group_id', [
+                'customer_group' => 'g.customer_group_code',
+            ])
+            ->columns([
+                'increment_id' => 'o.increment_id', 'created_at' => 'o.created_at', 'state' => 'o.state',
+                'status' => 'o.status', 'customer_email' => 'o.customer_email',
+                'customer_firstname' => 'o.customer_firstname', 'customer_lastname' => 'o.customer_lastname',
+                'customer_is_guest' => 'o.customer_is_guest', 'shipping_method' => 'o.shipping_description',
+                'coupon_code' => 'o.coupon_code', 'total_qty_ordered' => 'o.total_qty_ordered',
+                'base_currency_code' => 'o.base_currency_code', 'base_subtotal' => 'o.base_subtotal',
+                'base_discount_amount' => 'o.base_discount_amount', 'base_shipping_amount' => 'o.base_shipping_amount',
+                'base_tax_amount' => 'o.base_tax_amount', 'base_grand_total' => 'o.base_grand_total',
+                'base_total_refunded' => 'o.base_total_refunded', 'order_currency_code' => 'o.order_currency_code',
+                'grand_total' => 'o.grand_total',
+            ])
+            ->order('o.entity_id ASC');
+    }
+
+    protected function row(array $row): array
+    {
+        $row['created_at'] = $this->storeTime((string)$row['created_at']);
+        $row['customer_name'] = trim($row['customer_firstname'] . ' ' . $row['customer_lastname']);
+        $row['customer_is_guest'] = $row['customer_is_guest'] ? 1 : 0;
+        $row['total_qty_ordered'] = (float)$row['total_qty_ordered'];
+        $row['billing_name'] = trim($row['billing_firstname'] . ' ' . $row['billing_lastname']);
+        $row['shipping_name'] = trim($row['shipping_firstname'] . ' ' . $row['shipping_lastname']);
+        $row['billing_street'] = self::street($row['billing_street']);
+        $row['shipping_street'] = self::street($row['shipping_street']);
+        foreach (self::MONEY as $key) {
+            $row[$key] = round((float)$row[$key], 2);
+        }
+
+        return $row;
     }
 
     /**

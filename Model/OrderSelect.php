@@ -14,7 +14,9 @@ use Magento\Framework\DB\Select;
 class OrderSelect
 {
     public const RATE = 'IFNULL(o.base_to_global_rate, 1)';
-    public const UTC_HOUR = "DATE_FORMAT(o.created_at, '%Y-%m-%d %H')";
+    /** UTC quarter hour ("Y-m-d H:i"): every real timezone offset is a whole number of quarters (India, Nepal). */
+    public const UTC_SLOT = "CONCAT(DATE_FORMAT(o.created_at, '%Y-%m-%d %H:'),"
+        . " LPAD(FLOOR(MINUTE(o.created_at) / 15) * 15, 2, '0'))";
 
     public function __construct(private readonly ResourceConnection $resource)
     {
@@ -56,15 +58,34 @@ class OrderSelect
             ->where('o.entity_id <= ?', $upToId);
     }
 
-    /** Highest order ID, optionally only among orders created before a UTC datetime. 0 if none. */
+    /**
+     * Highest order ID, optionally only among orders created before a UTC datetime. 0 if none.
+     * Walks the primary key down from the newest order instead of MAX() over a created_at range scan.
+     */
     public function getMaxOrderId(?string $createdBeforeUtc = null): int
     {
         $select = $this->getConnection()->select()
-            ->from($this->getTable('sales_order'), [new \Zend_Db_Expr('MAX(entity_id)')]);
+            ->from($this->getTable('sales_order'), ['entity_id'])
+            ->order('entity_id DESC')
+            ->limit(1);
         if ($createdBeforeUtc !== null) {
             $select->where('created_at < ?', $createdBeforeUtc);
         }
 
         return (int)$this->getConnection()->fetchOne($select);
+    }
+
+    /** $upToId, lowered so the window ($afterId, result] holds at most $limit orders. */
+    public function capOrderId(int $afterId, int $upToId, int $limit): int
+    {
+        $select = $this->getConnection()->select()
+            ->from($this->getTable('sales_order'), ['entity_id'])
+            ->where('entity_id > ?', $afterId)
+            ->where('entity_id <= ?', $upToId)
+            ->order('entity_id ASC')
+            ->limit(1, $limit - 1);
+        $id = $this->getConnection()->fetchOne($select);
+
+        return $id === false || $id === null ? $upToId : (int)$id;
     }
 }

@@ -27,4 +27,18 @@ class CsvWriterTest extends TestCase
             "'=HYPERLINK(\"http://x\")", "'@SUM(A1)", "'+cmd|calc", "'-2+3+cmd|' /C calc'!A0", 'Plain text',
         ], array_column($lines, 0));
     }
+
+    public function testWriteToStreamsRowsFromAGenerator(): void
+    {
+        $rows = (static function () {
+            yield ['a' => '1'];
+            yield ['a' => '=2'];
+        })();
+        $handle = fopen('php://temp', 'r+');
+
+        (new CsvWriter())->writeTo($handle, ['a' => ['label' => 'A', 'type' => Result::TYPE_TEXT]], $rows);
+        rewind($handle);
+
+        $this->assertSame("A\n1\n'=2\n", stream_get_contents($handle));
+    }
 }

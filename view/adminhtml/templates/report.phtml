@@ -75,7 +75,7 @@ $chart = $block->getChartConfig();
             <tr>
                 <?php foreach ($result->columns as $key => $column): ?>
                     <td<?= $column['type'] === 'text' ? '' : ' style="text-align:right"' ?>>
-                        <?= $escaper->escapeHtml($block->format($column['type'], $row[$key] ?? null)) ?>
+                        <?= $escaper->escapeHtml($block->format($column['type'], $row[$key] ?? null, $row['base_currency_code'] ?? null)) ?>
                     </td>
                 <?php endforeach; ?>
             </tr>

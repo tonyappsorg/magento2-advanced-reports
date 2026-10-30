@@ -24,6 +24,7 @@ class ScheduledOrderExportTest extends TestCase
     private OrderSelect&MockObject $orderSelect;
     private AttachmentMailer&MockObject $mailer;
     private ScheduledOrderExport $export;
+    private ?int $cap = null;
 
     protected function setUp(): void
     {
@@ -39,6 +40,7 @@ class ScheduledOrderExportTest extends TestCase
         $this->flags = $this->createMock(FlagManager::class);
         $this->orderSelect = $this->createMock(OrderSelect::class);
         $this->orderSelect->method('createIdRange')->willReturn($this->createMock(Select::class));
+        $this->orderSelect->method('capOrderId')->willReturnCallback(fn (int $after, int $upTo) => $this->cap ?? $upTo);
         $this->mailer = $this->createMock(AttachmentMailer::class);
 
         $result = new Result(
@@ -158,5 +160,18 @@ class ScheduledOrderExportTest extends TestCase
         $this->flags->expects($this->never())->method('saveFlag');
 
         $this->assertSame(0, $this->export->execute());
+    }
+
+    public function testBacklogIsSentInCappedBatchesAndMarkMovesToTheCap(): void
+    {
+        $this->cap = 1040;
+        $this->flags->method('getFlagData')->willReturn(40);
+        $this->orderSelect->method('getMaxOrderId')->willReturn(5000);
+        $this->orderSelect->expects($this->once())->method('capOrderId')
+            ->with(40, 5000, ScheduledOrderExport::MAX_ORDERS_PER_RUN);
+        $this->orderSelect->expects($this->exactly(2))->method('createIdRange')->with(40, 1040);
+        $this->flags->expects($this->once())->method('saveFlag')->with(ScheduledOrderExport::FLAG, 1040);
+
+        $this->export->execute();
     }
 }

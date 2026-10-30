@@ -37,8 +37,8 @@ class FilterTest extends TestCase
         $filter = $this->filter('2026-09-01', '2026-09-30');
 
         // 03:00 UTC is 23:00 the previous evening in New York (EDT, UTC-4).
-        self::assertSame('2026-09-09', $filter->getBucket('2026-09-10 03'));
-        self::assertSame('2026-09-10', $filter->getBucket('2026-09-10 04'));
+        self::assertSame('2026-09-09', $filter->getBucket('2026-09-10 03:45'));
+        self::assertSame('2026-09-10', $filter->getBucket('2026-09-10 04:00'));
     }
 
     public function testWeekAndMonthBuckets(): void
@@ -46,9 +46,23 @@ class FilterTest extends TestCase
         $weeks = $this->filter('2026-09-01', '2026-09-14', Filter::PERIOD_WEEK);
         // 2026-09-01 is a Tuesday; weeks are labelled by their Monday.
         self::assertSame(['2026-08-31', '2026-09-07', '2026-09-14'], $weeks->getBuckets());
-        self::assertSame('2026-09-07', $weeks->getBucket('2026-09-13 20'));
+        self::assertSame('2026-09-07', $weeks->getBucket('2026-09-13 20:00'));
 
         $months = $this->filter('2026-08-15', '2026-10-01', Filter::PERIOD_MONTH);
         self::assertSame(['2026-08', '2026-09', '2026-10'], $months->getBuckets());
+    }
+
+    public function testHalfHourOffsetZoneBucketsEveryQuarterOfTheRangeIntoItsLocalDay(): void
+    {
+        $tz = new \DateTimeZone('Asia/Kolkata');
+        $filter = new Filter(new \DateTimeImmutable('2026-09-10', $tz), new \DateTimeImmutable('2026-09-10', $tz));
+        [$from] = $filter->getUtcRange();
+
+        // Local midnight is 18:30 UTC: the 18:30 slot is the first of 10 Sep, 18:15 the last of 9 Sep.
+        self::assertSame('2026-09-09 18:30:00', $from);
+        self::assertSame('2026-09-10', $filter->getBucket('2026-09-09 18:30'));
+        self::assertSame('2026-09-09', $filter->getBucket('2026-09-09 18:15'));
+        self::assertSame('2026-09-10', $filter->getBucket('2026-09-10 18:15'));
+        self::assertSame(['2026-09-10'], $filter->getBuckets());
     }
 }

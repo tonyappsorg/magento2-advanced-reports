@@ -100,14 +100,14 @@ class SalesOverview implements ReportInterface
 
         $orders = $this->orderSelect->create($filter)
             ->columns([
-                'hour' => new \Zend_Db_Expr(OrderSelect::UTC_HOUR),
+                'slot' => new \Zend_Db_Expr(OrderSelect::UTC_SLOT),
                 'orders' => new \Zend_Db_Expr('COUNT(*)'),
                 'revenue' => new \Zend_Db_Expr("SUM(o.base_grand_total * $rate)"),
                 'refunded' => new \Zend_Db_Expr("SUM(IFNULL(o.base_total_refunded, 0) * $rate)"),
                 'discount' => new \Zend_Db_Expr("SUM(ABS(IFNULL(o.base_discount_amount, 0)) * $rate)"),
                 'items' => new \Zend_Db_Expr('SUM(o.total_qty_ordered)'),
             ])
-            ->group('hour');
+            ->group('slot');
 
         // Cost is read from leaf items (as core's invoice cost total does) and revenue from the
         // item that carries the price: the configurable parent, or the item itself.
@@ -119,7 +119,7 @@ class SalesOverview implements ReportInterface
             ->where('i.product_type NOT IN (?)', ['configurable', 'bundle'])
             ->where('i.base_cost > 0')
             ->columns([
-                'hour' => new \Zend_Db_Expr(OrderSelect::UTC_HOUR),
+                'slot' => new \Zend_Db_Expr(OrderSelect::UTC_SLOT),
                 'item_revenue' => new \Zend_Db_Expr(
                     'SUM(IF(i.base_row_total > 0 OR p.item_id IS NULL,'
                     . ' i.base_row_total - IFNULL(i.base_discount_amount, 0),'
@@ -127,12 +127,12 @@ class SalesOverview implements ReportInterface
                 ),
                 'cost' => new \Zend_Db_Expr("SUM(i.base_cost * i.qty_ordered * $rate)"),
             ])
-            ->group('hour');
+            ->group('slot');
 
         foreach ([$orders, $items] as $select) {
             foreach ($connection->fetchAll($select) as $row) {
-                $bucket = $filter->getBucket($row['hour']);
-                unset($row['hour']);
+                $bucket = $filter->getBucket($row['slot']);
+                unset($row['slot']);
                 foreach ($row as $key => $value) {
                     $buckets[$bucket][$key] += (float)$value;
                 }

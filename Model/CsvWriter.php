@@ -11,19 +11,39 @@ class CsvWriter
     public function write(Result $result): string
     {
         $handle = fopen('php://temp', 'r+');
-        fputcsv($handle, array_map([$this, 'cell'], array_column($result->columns, 'label')), ',', '"', '');
-        foreach ([...$result->rows, ...($result->totals ? [$result->totals] : [])] as $row) {
-            $line = [];
-            foreach (array_keys($result->columns) as $key) {
-                $line[] = $this->cell($row[$key] ?? '');
-            }
-            fputcsv($handle, $line, ',', '"', '');
-        }
+        $this->writeTo($handle, $result->columns, $result->rows, $result->totals);
         rewind($handle);
         $csv = stream_get_contents($handle);
         fclose($handle);
 
         return $csv;
+    }
+
+    /**
+     * @param resource $handle
+     * @param array<string, array{label: string, type: string}> $columns
+     * @param iterable<array<string, mixed>> $rows
+     * @param array<string, mixed>|null $totals
+     */
+    public function writeTo($handle, array $columns, iterable $rows, ?array $totals = null): void
+    {
+        fputcsv($handle, array_map([$this, 'cell'], array_column($columns, 'label')), ',', '"', '');
+        foreach ($rows as $row) {
+            $this->writeRow($handle, $columns, $row);
+        }
+        if ($totals) {
+            $this->writeRow($handle, $columns, $totals);
+        }
+    }
+
+    /** @param resource $handle */
+    private function writeRow($handle, array $columns, array $row): void
+    {
+        $line = [];
+        foreach (array_keys($columns) as $key) {
+            $line[] = $this->cell($row[$key] ?? '');
+        }
+        fputcsv($handle, $line, ',', '"', '');
     }
 
     /**

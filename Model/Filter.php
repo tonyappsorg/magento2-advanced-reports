@@ -53,13 +53,12 @@ class Filter
     }
 
     /**
-     * Period label for a UTC hour as returned by DATE_FORMAT(created_at, '%Y-%m-%d %H').
-     * ponytail: hourly UTC buckets, so zones with :30/:45 offsets (India, Nepal) put up to 45 min
-     * on the wrong side of midnight; bucket by 15 min in SQL if that matters.
+     * Period label for a UTC quarter hour ("Y-m-d H:i") as returned by OrderSelect::UTC_SLOT. Quarter hours,
+     * not hours, so zones with :30/:45 offsets (India, Nepal) don't land on the wrong side of local midnight.
      */
-    public function getBucket(string $utcHour): string
+    public function getBucket(string $utcSlot): string
     {
-        $local = (new \DateTimeImmutable($utcHour . ':00:00', new \DateTimeZone('UTC')))
+        $local = (new \DateTimeImmutable($utcSlot . ':00', new \DateTimeZone('UTC')))
             ->setTimezone($this->from->getTimezone());
 
         return $this->bucketOf($local);

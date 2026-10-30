@@ -41,7 +41,7 @@ admins, and a REST endpoint for external BI.
 - **Live SQL against `sales_order` / `sales_order_item` (+ `sales_creditmemo_item`,
   `catalog_category_product`).** No aggregation tables and no Refresh Statistics step.
   Every report takes the same filters: date from/to (converted from store timezone to UTC),
-  store view(s), and order state (default excludes `canceled`). Revenue is in base currency.
+  store view(s), and order state (default excludes `canceled`, `pending_payment` and `payment_review`). Revenue is in base currency.
   `ponytail:` live queries. If a report gets slow at real volume, add a nightly aggregate for that one report.
 - **One report = one class** implementing `ReportInterface` (`getCode()`, `getTitle()`,
   `getColumns()`, `getRows(Filter)`, `getChart()`), registered in a `ReportPool` through `di.xml`.
@@ -123,8 +123,8 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
   chosen simple's SKU and the price. `ponytail:` dynamic-price bundle children aren't exported
   separately. Add them if an ERP needs bundle components.
 - The admin page fetches only the first 500 rows (501, to know whether to say so), so a long range can't run
-  PHP out of memory there. The CSV always has every row. `ponytail:` the CSV export still builds the whole file in
-  memory; stream it if exports reach hundreds of thousands of rows.
+  PHP out of memory there. The CSV always has every row; it is written row by row to a temp file in `var/export/`
+  and streamed back (the file is removed after sending).
 
 ### Scheduled order export
 
@@ -175,9 +175,9 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
   `Tonyapps_AdvancedReports::<code>`).
 - `Model/Filter` is a value object: local-day range, UTC conversion, previous period, and period buckets.
   `FilterFactory` validates untrusted params: `Y-m-d` dates, max 1100 days, whitelisted period/states,
-  int store ids. Default is the last 30 days with every state except `canceled`.
+  int store ids. Default is the last 30 days with every state except `canceled`, `pending_payment` and `payment_review`.
 - `Model/OrderSelect` is the shared filtered `sales_order` select. Money is `base_* × base_to_global_rate`,
-  so it's reported in the global base currency. Periodic reports group by UTC hour in SQL and bucket
+  so it's reported in the global base currency. Periodic reports group by UTC quarter hour in SQL and bucket
   into local day/week/month in PHP, so there's no `CONVERT_TZ` and no MySQL tz tables needed.
 - Margin: cost from leaf items (as core's invoice cost total does), revenue from the priced item
   (configurable parent or itself). Hidden when no item in range has `base_cost > 0`.
@@ -192,6 +192,21 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
   Reports > Advanced Reports > Sales Overview and check the chart draws.
 - `setup:di:compile` passes (fixed 2026-09-30: `NotifyOnNewBrowserLogin` renamed from the `Tony\` to the `Tonyapps\`
   namespace, and its declared `cbschuld/browser.php` dependency is now in the root composer.json).
+
+## Review fixes (2026-10-30)
+
+- **:30/:45 timezones** (India, Nepal) no longer break Sales Overview: periodic reports group by UTC quarter hour
+  (`OrderSelect::UTC_SLOT`), so every slot falls on one side of local midnight.
+- **Scheduled export sends at most 1000 orders per run** (`ScheduledOrderExport::MAX_ORDERS_PER_RUN`) and moves the
+  mark to the last one sent; a backlog after a long pause drains over the following runs instead of one email
+  SMTP rejects forever.
+- **Admin CSV export streams**: order and order-item exports fetch row by row into a temp file that is streamed back,
+  instead of `fetchAll` plus one string. Aggregate reports are small and still run whole.
+- **Default state filter** also leaves out `pending_payment` and `payment_review` (not yet paid).
+- **Row-level amounts** on the admin page are shown in the order's own base currency.
+- **Max order ID** walks the primary key down instead of `MAX()` over a `created_at` range.
+- **Attachments**: a mail transport without core's Symfony message now fails with a clear error (the mark stays)
+  instead of a fatal error.
 
 ## Later (deferred, not in v1)
 

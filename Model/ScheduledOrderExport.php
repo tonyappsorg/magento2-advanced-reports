@@ -31,6 +31,8 @@ class ScheduledOrderExport
     private const TEMPLATE = 'tonyapps_advancedreports_order_export';
     private const FIRST_RUN_HOURS = 24;
     private const SETTLE_MINUTES = 10;
+    /** Keeps the email under SMTP size limits after a long pause; the backlog drains over the next runs. */
+    public const MAX_ORDERS_PER_RUN = 1000;
     private const XML_PATH_EMAIL_DISABLED = 'system/smtp/disable';
 
     public function __construct(
@@ -75,6 +77,7 @@ class ScheduledOrderExport
         if ($upToId <= $lastId) {
             return 0;
         }
+        $upToId = $this->orderSelect->capOrderId($lastId, $upToId, self::MAX_ORDERS_PER_RUN);
 
         $orders = $this->orderExport->fromSelect($this->orderSelect->createIdRange($lastId, $upToId));
         if (!$orders->rows) {

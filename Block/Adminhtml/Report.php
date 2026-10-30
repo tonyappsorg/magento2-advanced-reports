@@ -116,7 +116,8 @@ class Report extends Template
         return $this->json->serialize($chart);
     }
 
-    public function format(string $type, mixed $value): string
+    /** @param string|null $currency the row's own base currency (row-level reports); default: global base */
+    public function format(string $type, mixed $value, ?string $currency = null): string
     {
         if ($value === null || $value === '') {
             return '—';
@@ -128,7 +129,7 @@ class Report extends Template
                 false,
                 PriceCurrencyInterface::DEFAULT_PRECISION,
                 null,
-                $this->_scopeConfig->getValue(Currency::XML_PATH_CURRENCY_BASE)
+                $currency ?: $this->_scopeConfig->getValue(Currency::XML_PATH_CURRENCY_BASE)
             ),
             Result::TYPE_INT => number_format((float)$value),
             Result::TYPE_DECIMAL => number_format((float)$value, 2),

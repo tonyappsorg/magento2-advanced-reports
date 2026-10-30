@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Tonyapps\AdvancedReports\Model;
 
 use Magento\Framework\App\Area;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Store\Model\StoreManagerInterface;
 use Symfony\Component\Mime\Part\DataPart;
@@ -40,7 +41,12 @@ class AttachmentMailer
             ->addTo($to)
             ->getTransport();
 
-        $message = $transport->getMessage()->getSymfonyMessage();
+        $message = $transport->getMessage();
+        // Only core's EmailMessage exposes the Symfony message; a third-party SMTP transport may not.
+        if (!method_exists($message, 'getSymfonyMessage')) {
+            throw new LocalizedException(__('The mail transport in use cannot send attachments.'));
+        }
+        $message = $message->getSymfonyMessage();
         $parts = [$message->getBody()];
         foreach ($attachments as $name => $contents) {
             $parts[] = new DataPart($contents, $name, 'text/csv');

@@ -47,7 +47,11 @@ class FilterFactory
         $allStates = array_keys($this->orderConfig->getStates());
         $states = array_values(array_intersect((array)($params['states'] ?? []), $allStates));
         if (!isset($params['states'])) {
-            $states = array_values(array_diff($allStates, [Order::STATE_CANCELED]));
+            // Not yet (or never) paid orders aren't revenue.
+            $states = array_values(array_diff(
+                $allStates,
+                [Order::STATE_CANCELED, Order::STATE_PENDING_PAYMENT, Order::STATE_PAYMENT_REVIEW]
+            ));
         }
 
         return new Filter($from, $to, $period, $storeIds, $states);
