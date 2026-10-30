@@ -32,8 +32,4 @@ class ReportPool
         return $this->reports[$code];
     }
 
-    public function getAclResource(string $code): string
-    {
-        return 'Tonyapps_AdvancedReports::' . $code;
-    }
 }

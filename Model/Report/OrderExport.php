@@ -4,46 +4,21 @@ declare(strict_types=1);
 namespace Tonyapps\AdvancedReports\Model\Report;
 
 use Magento\Framework\DB\Select;
-use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
-use Tonyapps\AdvancedReports\Model\Filter;
-use Tonyapps\AdvancedReports\Model\OrderSelect;
-use Tonyapps\AdvancedReports\Model\ReportInterface;
 use Tonyapps\AdvancedReports\Model\Result;
 
 /**
  * One row per order, for ERP/accounting import. Base-currency row values, no totals row.
  */
-class OrderExport implements ReportInterface
+class OrderExport extends AbstractOrderExport
 {
     private const MONEY = [
         'base_subtotal', 'base_discount_amount', 'base_shipping_amount', 'base_tax_amount',
         'base_grand_total', 'base_total_refunded', 'grand_total',
     ];
 
-    public function __construct(
-        private readonly OrderSelect $orderSelect,
-        private readonly TimezoneInterface $timezone
-    ) {
-    }
-
     public function getTitle(): string
     {
         return (string)__('Order Export');
-    }
-
-    public function isPeriodic(): bool
-    {
-        return false;
-    }
-
-    public function run(Filter $filter): Result
-    {
-        $select = $this->orderSelect->create($filter);
-        if ($filter->limit !== null) {
-            $select->limit($filter->limit);
-        }
-
-        return $this->fromSelect($select);
     }
 
     /** @param Select $orders a sales_order select aliased "o" with no columns (OrderSelect::create / createIdRange) */
@@ -85,11 +60,9 @@ class OrderExport implements ReportInterface
             ])
             ->order('o.entity_id ASC');
 
-        $utc = new \DateTimeZone('UTC');
-        $local = new \DateTimeZone($this->timezone->getConfigTimezone());
         $rows = [];
         foreach ($this->orderSelect->getConnection()->fetchAll($select) as $row) {
-            $row['created_at'] = (new \DateTimeImmutable($row['created_at'], $utc))->setTimezone($local)->format('Y-m-d H:i:s');
+            $row['created_at'] = $this->storeTime((string)$row['created_at']);
             $row['customer_name'] = trim($row['customer_firstname'] . ' ' . $row['customer_lastname']);
             $row['customer_is_guest'] = $row['customer_is_guest'] ? 1 : 0;
             $row['total_qty_ordered'] = (float)$row['total_qty_ordered'];

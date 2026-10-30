@@ -30,7 +30,7 @@ abstract class AbstractReport extends Action
         $code = $this->getCode();
 
         return $this->reportPool->has($code)
-            && $this->_authorization->isAllowed($this->reportPool->getAclResource($code));
+            && $this->_authorization->isAllowed('Tonyapps_AdvancedReports::' . $code);
     }
 
     protected function getCode(): string
