@@ -219,3 +219,13 @@ Built 2026-10-25, ahead of phase 2. Answered that day: both granularities, email
 - Is the recipient list by admin role OK, or do you want free-text emails too?
 - Default order-state filter: exclude only `canceled`, or also `closed` (fully refunded)?
 - Dev data has 23 orders. Is there a prod-sized dump to check query speed against before phase 2?
+
+## Redesigning the emails
+
+Each email's template is chosen in **Stores › Configuration › Tonyapps › Advanced Reports › Order Export › Email Template**. Pick a template made in **Marketing › Email Templates** or a design made
+with the [Email Designer](https://github.com/tonyappsorg/magento2-email-designer) (`Tonyapps_EmailDesigner`) (**Marketing › Communications › Email Designer**). The default template is used until another one
+is picked.
+
+The template IDs follow core's config-path convention so the setting can offer the default: `tonyapps_advancedreports_order_export` is now `tonyapps_advancedreports_order_export_email_template`. Theme overrides
+keep working (they go by file name). A custom template created from the old ID keeps its content, but its *Template
+Information* no longer names the default it was loaded from.

@@ -28,7 +28,7 @@ class ScheduledOrderExport
     private const XML_PATH_ENABLED = 'tonyapps_advancedreports/order_export/enabled';
     private const XML_PATH_RECIPIENTS = 'tonyapps_advancedreports/order_export/recipients';
     private const XML_PATH_FILES = 'tonyapps_advancedreports/order_export/files';
-    private const TEMPLATE = 'tonyapps_advancedreports_order_export';
+    private const XML_PATH_TEMPLATE = 'tonyapps_advancedreports/order_export/email_template';
     private const FIRST_RUN_HOURS = 24;
     private const SETTLE_MINUTES = 10;
     /** Keeps the email under SMTP size limits after a long pause; the backlog drains over the next runs. */
@@ -98,7 +98,7 @@ class ScheduledOrderExport
         }
 
         // Throws on failure, which leaves the mark where it was so the next run retries the same orders.
-        $this->mailer->send($recipients, self::TEMPLATE, [
+        $this->mailer->send($recipients, (string)$this->scopeConfig->getValue(self::XML_PATH_TEMPLATE), [
             'count' => count($orders->rows),
             'first' => $orders->rows[0]['increment_id'],
             'last' => $orders->rows[count($orders->rows) - 1]['increment_id'],

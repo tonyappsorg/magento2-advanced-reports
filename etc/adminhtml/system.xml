@@ -34,6 +34,11 @@
                     <can_be_empty>1</can_be_empty>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="email_template" translate="label" type="select" sortOrder="50" showInDefault="1">
+                    <label>Email Template</label>
+                    <source_model>Magento\Config\Model\Config\Source\Email\Template</source_model>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
         </section>
     </system>

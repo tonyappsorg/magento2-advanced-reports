@@ -32,6 +32,7 @@ class ScheduledOrderExportTest extends TestCase
             'tonyapps_advancedreports/order_export/enabled' => '1',
             'tonyapps_advancedreports/order_export/recipients' => 'erp@example.com, not-an-email ,acct@example.com',
             'tonyapps_advancedreports/order_export/files' => 'orders,items',
+            'tonyapps_advancedreports/order_export/email_template' => 'tonyapps_advancedreports_order_export_email_template',
         ];
         $scopeConfig = $this->createMock(ScopeConfigInterface::class);
         $scopeConfig->method('getValue')->willReturnCallback(fn (string $path) => $this->config[$path] ?? null);
@@ -90,7 +91,7 @@ class ScheduledOrderExportTest extends TestCase
         $this->orderSelect->expects($this->exactly(2))->method('createIdRange')->with(40, 42);
         $this->mailer->expects($this->once())->method('send')->with(
             ['erp@example.com', 'acct@example.com'],
-            'tonyapps_advancedreports_order_export',
+            'tonyapps_advancedreports_order_export_email_template',
             ['count' => 2, 'first' => '000000041', 'last' => '000000042'],
             $this->callback(fn (array $files) => count($files) === 2
                 && str_contains(implode('', array_keys($files)), 'order_items_')
@@ -99,6 +100,16 @@ class ScheduledOrderExportTest extends TestCase
         $this->flags->expects($this->once())->method('saveFlag')->with(ScheduledOrderExport::FLAG, 42);
 
         $this->assertSame(2, $this->export->execute());
+    }
+
+    public function testSendsWithTheTemplateChosenInConfig(): void
+    {
+        $this->config['tonyapps_advancedreports/order_export/email_template'] = '7';
+        $this->flags->method('getFlagData')->willReturn(40);
+        $this->orderSelect->method('getMaxOrderId')->willReturn(42);
+        $this->mailer->expects($this->once())->method('send')->with($this->anything(), '7');
+
+        $this->export->execute();
     }
 
     public function testFailedSendLeavesMarkSoNextRunRetries(): void

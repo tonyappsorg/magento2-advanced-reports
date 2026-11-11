@@ -6,6 +6,7 @@
                 <enabled>0</enabled>
                 <schedule>0 6 * * *</schedule>
                 <files>orders,items</files>
+                <email_template>tonyapps_advancedreports_order_export_email_template</email_template>
             </order_export>
         </tonyapps_advancedreports>
     </default>
