@@ -11,4 +11,12 @@
             </argument>
         </arguments>
     </type>
+    <!-- Tonyapps_EmailDesigner: a starter design for the order export email. Ignored without that module. -->
+    <type name="Tonyapps\EmailDesigner\Model\BlockPool">
+        <arguments>
+            <argument name="starters" xsi:type="array">
+                <item name="tonyapps_advancedreports_order_export_email_template" xsi:type="string">Tonyapps_AdvancedReports::view/adminhtml/email_designer/order_export.mjml</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

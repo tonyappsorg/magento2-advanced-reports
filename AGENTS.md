@@ -138,6 +138,9 @@ Phases:
   with a clear error (mark stays).
 - The email renders in the **frontend** area of the default store view. In adminhtml the shared
   `design/email/header_template` fails ("Template file 'header.html' is not found").
+- Email Designer (`etc/di.xml`, ignored without `Tonyapps_EmailDesigner`): starter
+  `view/adminhtml/email_designer/order_export.mjml` for `tonyapps_advancedreports_order_export_email_template`; no
+  blocks (the email is one sentence).
 
 ### Planned, not built
 
@@ -265,6 +268,10 @@ vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist app/code/Tonyapps/Advanced
   Real send to Mailpit: subject, body, two `text/csv` attachments, mark 36 → 39, second run sent nothing.
 
 ## Change history
+
+### 2026-11-13 Email Designer blocks and starter designs
+
+- `etc/di.xml` registers a starter design for the order export email (heading from the subject + the sentence).
 
 ### 2026-10-30 review fixes
 

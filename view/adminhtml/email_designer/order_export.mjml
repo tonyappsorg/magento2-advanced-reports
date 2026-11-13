@@ -1,0 +1,2 @@
+        <mj-text font-size="24px" font-weight="600">{{trans "Order export: %count new orders" count=$count}}</mj-text>
+        <mj-text>{{trans "%count orders placed since the last export are attached (#%first to #%last)." count=$count first=$first last=$last}}</mj-text>

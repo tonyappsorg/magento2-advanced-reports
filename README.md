@@ -77,7 +77,8 @@ Make sure Magento cron is running if you use the scheduled order export.
 
 Pick a template made in **Marketing › Email Templates**, or a design made with the
 [Email Designer](https://github.com/tonyappsorg/magento2-email-designer) (**Marketing › Communications › Email
-Designer**), in **Order Export › Email Template**. The built-in template is used until you pick another one.
+Designer**), in **Order Export › Email Template**. The built-in template is used until you pick another one. A new
+design starts from a ready-made copy of the export email.
 
 ## For developers
 
