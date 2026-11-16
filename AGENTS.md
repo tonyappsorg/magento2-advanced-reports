@@ -27,7 +27,7 @@ Phases:
 |---|---|
 | Platform | Magento **Open Source** 2.4.8-p4 |
 | PHP | `composer.json`: `~8.3.0\|\|~8.4.0` (old README said `>=8.3`) |
-| Module | `Tonyapps_AdvancedReports` / `tonyapps/module-advanced-reports` / v0.1.0 / GPL-3.0-or-later |
+| Module | `Tonyapps_AdvancedReports` / `tonyapps/module-advanced-reports` / 1.0.0 / GPL-3.0-or-later |
 | Charts | Chart.js already ships in `lib/web/chartjs` (used by the admin dashboard), so no new dependency |
 
 ## What Magento already has (not rebuilding)
