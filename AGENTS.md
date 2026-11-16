@@ -138,6 +138,7 @@ Phases:
   with a clear error (mark stays).
 - The email renders in the **frontend** area of the default store view. In adminhtml the shared
   `design/email/header_template` fails ("Template file 'header.html' is not found").
+- Email Designer real-data preview: `Model\EmailPreview` (registered on `Tonyapps\EmailDesigner\Model\PreviewPool` in `etc/di.xml`, duck-typed). Records: "Orders since last export" (the range the next run would send, `ScheduledOrderExport::nextRange()`) and "Orders of the last 24 hours" (`nextRange(true)`, the first-run window), each offered only when it has orders. Variables (`count`, `first`, `last`) from `ScheduledOrderExport::emailVariables()`. Read-only: the mark is not moved, no CSV is built, nothing is sent; no placeholders. `getStoreId()` returns null: the email goes out from the default store view, as `AttachmentMailer` sends it.
 - Email Designer (`etc/di.xml`, ignored without `Tonyapps_EmailDesigner`): starter
   `view/adminhtml/email_designer/order_export.mjml` for `tonyapps_advancedreports_order_export_email_template`; no
   blocks (the email is one sentence).
@@ -260,7 +261,7 @@ pages (admin 2FA blocks scripted login).
 vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist app/code/Tonyapps/AdvancedReports/Test/Unit
 ```
 
-- Unit tests: `Block/Adminhtml/ReportTest`, `Controller/Adminhtml/Report/ExportTest`, `Model/{AttachmentMailer,
+- Unit tests: `Block/Adminhtml/ReportTest`, `Controller/Adminhtml/Report/ExportTest`, `Model/{AttachmentMailer,EmailPreview,
   CsvWriter,FilterFactory,Filter,OrderSelect,ScheduledOrderExport}Test`, `Model/Report/OrderExportTest`.
 - Order export check (2026-10-25): 7 unit tests for the mark (disabled, no recipients, nothing new, sends then
   advances, failed send keeps the mark, first run = last 24h, orders-only file). Both reports against the dev DB:
@@ -268,6 +269,10 @@ vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist app/code/Tonyapps/Advanced
   Real send to Mailpit: subject, body, two `text/csv` attachments, mark 36 → 39, second run sent nothing.
 
 ## Change history
+
+### 2026-11-15 Email Designer real-data preview
+
+- `Model\EmailPreview` (see Scheduled order export). The range logic (mark, first-run fallback, settle window, cap) moved from `execute()` into `ScheduledOrderExport::nextRange()` and the email variables into `emailVariables()`, both used by the export and the preview. Tests in `EmailPreviewTest`.
 
 ### 2026-11-13 Email Designer blocks and starter designs
 

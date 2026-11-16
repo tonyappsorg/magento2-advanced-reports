@@ -19,4 +19,17 @@
             </argument>
         </arguments>
     </type>
+    <!-- Tonyapps_EmailDesigner: real-data preview with the store's recent orders. Ignored without that module. -->
+    <type name="Tonyapps\EmailDesigner\Model\PreviewPool">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="advancedreports_order_export" xsi:type="array">
+                    <item name="templates" xsi:type="array">
+                        <item name="0" xsi:type="string">tonyapps_advancedreports_order_export_email_template</item>
+                    </item>
+                    <item name="provider" xsi:type="object">Tonyapps\AdvancedReports\Model\EmailPreview</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
 </config>

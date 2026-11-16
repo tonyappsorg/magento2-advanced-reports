@@ -64,20 +64,11 @@ class ScheduledOrderExport
             return 0;
         }
 
-        $lastId = $this->flagManager->getFlagData(self::FLAG);
-        if ($lastId === null) {
-            $lastId = $this->orderSelect->getMaxOrderId(
-                gmdate(DateTime::DATETIME_PHP_FORMAT, time() - self::FIRST_RUN_HOURS * 3600)
-            );
-        }
-        $lastId = (int)$lastId;
-        $upToId = $this->orderSelect->getMaxOrderId(
-            gmdate(DateTime::DATETIME_PHP_FORMAT, time() - self::SETTLE_MINUTES * 60)
-        );
-        if ($upToId <= $lastId) {
+        $range = $this->nextRange();
+        if ($range === null) {
             return 0;
         }
-        $upToId = $this->orderSelect->capOrderId($lastId, $upToId, self::MAX_ORDERS_PER_RUN);
+        [$lastId, $upToId] = $range;
 
         $orders = $this->orderExport->fromSelect($this->orderSelect->createIdRange($lastId, $upToId));
         if (!$orders->rows) {
@@ -98,14 +89,55 @@ class ScheduledOrderExport
         }
 
         // Throws on failure, which leaves the mark where it was so the next run retries the same orders.
-        $this->mailer->send($recipients, (string)$this->scopeConfig->getValue(self::XML_PATH_TEMPLATE), [
-            'count' => count($orders->rows),
-            'first' => $orders->rows[0]['increment_id'],
-            'last' => $orders->rows[count($orders->rows) - 1]['increment_id'],
-        ], $attachments);
+        $this->mailer->send(
+            $recipients,
+            (string)$this->scopeConfig->getValue(self::XML_PATH_TEMPLATE),
+            $this->emailVariables($orders),
+            $attachments
+        );
         $this->flagManager->saveFlag(self::FLAG, $upToId);
 
         return count($orders->rows);
+    }
+
+    /**
+     * Order ID range (after, up to] the next run exports: from the mark, or from the last 24 hours without one (or
+     * with $ignoreMark), up to the settle window, capped. Read-only; shared with the Email Designer preview.
+     *
+     * @return array{int, int}|null null when there is nothing to export
+     */
+    public function nextRange(bool $ignoreMark = false): ?array
+    {
+        $lastId = $ignoreMark ? null : $this->flagManager->getFlagData(self::FLAG);
+        if ($lastId === null) {
+            $lastId = $this->orderSelect->getMaxOrderId(
+                gmdate(DateTime::DATETIME_PHP_FORMAT, time() - self::FIRST_RUN_HOURS * 3600)
+            );
+        }
+        $lastId = (int)$lastId;
+        $upToId = $this->orderSelect->getMaxOrderId(
+            gmdate(DateTime::DATETIME_PHP_FORMAT, time() - self::SETTLE_MINUTES * 60)
+        );
+        if ($upToId <= $lastId) {
+            return null;
+        }
+
+        return [$lastId, $this->orderSelect->capOrderId($lastId, $upToId, self::MAX_ORDERS_PER_RUN)];
+    }
+
+    /**
+     * The export email's template variables. Shared with the Email Designer preview (Model\EmailPreview).
+     *
+     * @param Result $orders non-empty order export result
+     * @return array<string, mixed>
+     */
+    public function emailVariables(Result $orders): array
+    {
+        return [
+            'count' => count($orders->rows),
+            'first' => $orders->rows[0]['increment_id'],
+            'last' => $orders->rows[count($orders->rows) - 1]['increment_id'],
+        ];
     }
 
     /** @return string[] */
