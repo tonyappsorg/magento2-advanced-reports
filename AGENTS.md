@@ -27,7 +27,7 @@ Phases:
 |---|---|
 | Platform | Magento **Open Source** 2.4.8-p4 |
 | PHP | `composer.json`: `~8.3.0\|\|~8.4.0` (old README said `>=8.3`) |
-| Module | `Tonyapps_AdvancedReports` / `tonyapps/module-advanced-reports` / v0.1.0 / proprietary |
+| Module | `Tonyapps_AdvancedReports` / `tonyapps/module-advanced-reports` / v0.1.0 / GPL-3.0-or-later |
 | Charts | Chart.js already ships in `lib/web/chartjs` (used by the admin dashboard), so no new dependency |
 
 ## What Magento already has (not rebuilding)
@@ -270,6 +270,8 @@ vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist app/code/Tonyapps/Advanced
 
 ## Change history
 
+- **2026-11-16** — Released as free software under GPL-3.0-or-later (owner decision): `LICENSE` added,
+  `composer.json` license changed from `proprietary`, License section in the README.
 ### 2026-11-15 Email Designer real-data preview
 
 - `Model\EmailPreview` (see Scheduled order export). The range logic (mark, first-run fallback, settle window, cap) moved from `execute()` into `ScheduledOrderExport::nextRange()` and the email variables into `emailVariables()`, both used by the export and the preview. Tests in `EmailPreviewTest`.
